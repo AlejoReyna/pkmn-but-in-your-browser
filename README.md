@@ -9,8 +9,8 @@ Game Boy Color Pokémon Gold in the browser, isolated from
 
 Standalone Next.js app: the original React player runs at `/` (no
 static export, no extra demo page). The original Next.js/React source is
-preserved under `src/` — `src/app/` is new and minimal (launch screen +
-`GameBoyPlayer`), everything else is verbatim from monSite.
+preserved under `src/` — `src/app/` is new and minimal (mounts the
+original `GameBoyPlayer` directly; exiting returns to its game library).
 
 ## What is included
 
