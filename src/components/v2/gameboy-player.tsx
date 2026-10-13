@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/components/lang-context";
 import { GAME_KEYS, GOLD_SAVE_KEY, parseGoldBackup } from "@/lib/gameboy/save";
 import { GAME_LIBRARY, type LibraryGame } from "@/lib/gameboy/library";
-import { CASE_STORAGE_KEY, GAMEBOY_CASES, MOBILE_GAMEBOY_QUERY, createGameFullscreen, parseGameBoyCase, type GameBoyCase, type GameFullscreenMode } from "@/lib/gameboy/presentation";
+import { CASE_STORAGE_KEY, GAMEBOY_CASES, createGameFullscreen, parseGameBoyCase, type GameBoyCase, type GameFullscreenMode } from "@/lib/gameboy/presentation";
 import styles from "./gameboy-player.module.css";
 
 const COPY = {
@@ -65,7 +65,7 @@ export default function GameBoyPlayer({ onExit }: { onExit: () => void }) {
   const [casePickerOpen, setCasePickerOpen] = useState(false);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   const [fullscreenMode, setFullscreenMode] = useState<GameFullscreenMode>("none");
-  const [fullscreenView, setFullscreenView] = useState<"mobile" | "desktop">("desktop");
+  const [fullscreenView, setFullscreenView] = useState<"mobile" | "desktop">("mobile");
   const fullscreen = useRef<ReturnType<typeof createGameFullscreen> | null>(null);
   const casePicker = useRef<HTMLDivElement>(null);
   const saveMenu = useRef<HTMLDivElement>(null);
@@ -116,7 +116,10 @@ export default function GameBoyPlayer({ onExit }: { onExit: () => void }) {
   function toggleFullscreen() {
     release(); setCasePickerOpen(false); setSaveMenuOpen(false);
     if (fullscreenMode === "none") {
-      setFullscreenView(window.matchMedia(MOBILE_GAMEBOY_QUERY).matches ? "mobile" : "desktop");
+      // Standalone player: always promote the playable screen, so desktop
+      // fullscreen looks exactly like the mobile maximized view (monSite
+      // uses a side-by-side casing grid on desktop instead).
+      setFullscreenView("mobile");
       void fullscreen.current?.enter();
     } else void fullscreen.current?.leave();
   }
