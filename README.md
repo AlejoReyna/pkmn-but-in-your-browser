@@ -7,9 +7,10 @@ Game Boy Color Pokémon Gold in the browser, isolated from
 > (`.gbc`, Gambatte core) setup — not Game Boy Advance. The engine,
 > saves, and tests are all GBC-specific.
 
-Standalone demo: serve `public/` as the web root (see below) and open
-`public/index.html`. No Next.js required for the demo. The original
-Next.js/React source is preserved under `src/` for reference and tests.
+Standalone Next.js app: the original React player runs at `/` (no
+static export, no extra demo page). The original Next.js/React source is
+preserved under `src/` — `src/app/` is new and minimal (launch screen +
+`GameBoyPlayer`), everything else is verbatim from monSite.
 
 ## What is included
 
@@ -47,15 +48,17 @@ New in this repo:
 ROMs are copyrighted Nintendo data. Supply your own legally-dumped
 image at `public/games/pokemon-gold.gbc` (see `public/games/README.md`).
 
-## Run the demo
-
-Any static server works. Serve the `public/` folder as the web root:
+## Run it (Next.js)
 
 ```bash
 npm install
-npx serve public
-# open the printed URL, e.g. http://localhost:3000/index.html
+npm run dev -- --allow-server  # deliberate local startup; http://localhost:3000
 ```
+
+`npm run dev` without `--allow-server` exits without starting anything
+(same guard as monSite — this 8 GB Mac has experienced system freezes).
+Local dev uses Webpack with a 1536 MiB Node old-space limit. Other
+scripts: `npm run build` → `npm start`.
 
 Controls: Arrows · X: A · Z: B · Enter: Start · Shift: Select ·
 Esc: pause. Use SAVE inside Pokémon Gold; the cartridge (32 KiB SRAM +
