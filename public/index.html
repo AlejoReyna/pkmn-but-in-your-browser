@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pokémon Gold in your browser</title>
+<style>
+@font-face{font-family:"GoldPixel";src:url("Minecraft.ttf") format("truetype");font-display:swap}
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:#18191d;color:#e6e2d5;font-family:"GoldPixel","Courier New",monospace;display:flex;flex-direction:column;align-items:center;padding:24px 16px 48px}
+main{width:min(100%,560px)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+h1{font-size:14px;font-weight:400;color:#e3c477;margin:0}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap}
+button{font:inherit;font-size:11px;background:#292a30;color:#e6e2d5;border:2px solid #59595e;padding:8px 10px;min-height:44px;cursor:pointer;touch-action:manipulation}
+button:hover{background:#37383e;color:#fff}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible{outline:3px solid #e3c477;outline-offset:3px}
+.shell{background:#d5d3c6;color:#454b64;padding:18px;border-radius:4px;box-shadow:inset 4px 4px #eeeadd,inset -4px -4px #898b82}
+.shell[data-case="green"]{background:#73935b}
+.shell[data-case="red"]{background:#bc4e4b}
+.shell[data-case="transparent"]{background:#91b8ab66}
+.screen{position:relative;aspect-ratio:10/9;background:#000;outline:4px solid #262a31}
+.screen iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;background:#000d;color:#e6e2d5;text-align:center;padding:16px;font-size:12px;line-height:1.7}
+.overlay[hidden]{display:none}
+.controls{display:grid;grid-template-columns:132px 1fr;gap:14px;margin-top:18px;user-select:none;-webkit-user-select:none}
+.dpad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px)}
+.dpad button{padding:0;border:0;background:#303239;color:#909399}
+.dpad [data-key="ArrowUp"]{grid-area:1/2}.dpad [data-key="ArrowLeft"]{grid-area:2/1}.dpad [data-key="ArrowDown"]{grid-area:3/2}.dpad [data-key="ArrowRight"]{grid-area:2/3}.dpad .center{grid-area:2/2;background:#303239}
+.ab{display:flex;gap:12px;justify-content:flex-end;align-items:flex-start}
+.ab button{width:56px;height:56px;border-radius:50%;border:0;background:#963c57;color:#ffe4e6;font-size:22px}
+.sys{display:flex;gap:10px;justify-content:flex-end}
+.sys button{background:transparent;border:0;color:#454b64;font-size:10px;text-transform:uppercase}
+p.help{font-size:10px;line-height:1.8;color:#b4b3b6}
+p.status{min-height:20px;font-size:10px;color:#e3c477}
+label.case{display:flex;gap:8px;align-items:center;font-size:10px}
+select{font:inherit;background:#292a30;color:#e6e2d5;border:2px solid #59595e;padding:6px}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Pokémon Gold in your browser</h1>
+<div class="toolbar">
+<button id="btn-start" type="button">Play</button>
+<button id="btn-pause" type="button" disabled>Pause</button>
+<button id="btn-sound" type="button" disabled>Enable sound</button>
+<button id="btn-export" type="button" disabled>Export save</button>
+<button id="btn-import" type="button" disabled>Import save</button>
+<button id="btn-snapshot" type="button" disabled>Save state</button>
+<button id="btn-full" type="button" disabled>Fullscreen</button>
+</div>
+</header>
+<label class="case">Casing
+<select id="sel-case"><option value="classic">Classic</option><option value="transparent">Transparent</option><option value="green">Green</option><option value="red">Red</option></select>
+</label>
+<div class="shell" id="shell" data-case="classic">
+<div class="screen" id="screen">
+<iframe id="frame" title="Pokémon Gold" allow="autoplay" tabindex="-1" hidden></iframe>
+<div class="overlay" id="overlay"><p id="overlay-text">Add <code>games/pokemon-gold.gbc</code>, then press Play.<br>See <code>games/README.md</code> — ROMs are not committed.</p><button id="btn-retry" type="button" hidden>Retry</button></div>
+</div>
+</div>
+<div class="controls" aria-label="Game controls">
+<div class="dpad"><span class="center"></span>
+<button type="button" data-key="ArrowUp" aria-label="Up">▲</button>
+<button type="button" data-key="ArrowLeft" aria-label="Left">◀</button>
+<button type="button" data-key="ArrowDown" aria-label="Down">▼</button>
+<button type="button" data-key="ArrowRight" aria-label="Right">▶</button>
+</div>
+<div>
+<div class="ab"><button type="button" data-key="z" aria-label="B">B</button><button type="button" data-key="x" aria-label="A">A</button></div>
+<div class="sys"><button type="button" data-key="Shift">Select</button><button type="button" data-key="Enter">Start</button></div>
+</div>
+</div>
+<p class="help">Arrows · X: A · Z: B · Enter: Start · Shift: Select · Esc: pause. Save from the Pokémon menu; the cartridge (SRAM + clock) auto-flushes every 15s and on hide/exit.</p>
+<p class="status" id="status" role="status"></p>
+<input id="file" type="file" accept=".json,application/json" hidden>
+</main>
+<script>
+(() => {
+const frame=document.getElementById('frame'),overlay=document.getElementById('overlay'),text=document.getElementById('overlay-text'),retry=document.getElementById('btn-retry'),status=document.getElementById('status');
+const btnStart=document.getElementById('btn-start'),btnPause=document.getElementById('btn-pause'),btnSound=document.getElementById('btn-sound'),btnExport=document.getElementById('btn-export'),btnImport=document.getElementById('btn-import'),btnSnap=document.getElementById('btn-snapshot'),btnFull=document.getElementById('btn-full'),file=document.getElementById('file'),shell=document.getElementById('shell'),sel=document.getElementById('sel-case');
+let state='idle',paused=false,sound=false,attempt=0,stopTimer=0;
+try{sel.value=localStorage.getItem('pkmn.case')||'classic';shell.dataset.case=sel.value;}catch{}
+sel.onchange=()=>{shell.dataset.case=sel.value;try{localStorage.setItem('pkmn.case',sel.value);}catch{}};
+const send=m=>frame.contentWindow?.postMessage({channel:'gold-host',...m},location.origin);
+const say=m=>status.textContent=m;
+function setOverlay(msg,showRetry){text.innerHTML=msg;retry.hidden=!showRetry;overlay.hidden=false;}
+function enablePlayUI(){[btnPause,btnSound,btnExport,btnImport,btnSnap,btnFull].forEach(b=>b.disabled=false);}
+function download(data,name,type){const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+async function checkRom(){try{const r=await fetch('games/pokemon-gold.gbc',{method:'HEAD'});return r.ok;}catch{return false;}}
+async function start(){
+if(state==='loading'||state==='ready')return;
+if(!await checkRom()){setOverlay('Missing <code>games/pokemon-gold.gbc</code>.<br>Add your own dump (see <code>games/README.md</code>).',false);say('ROM missing.');return;}
+state='loading';attempt++;say('Preparing Pokémon Gold…');setOverlay('Preparing Pokémon Gold…',false);btnStart.disabled=true;
+frame.hidden=false;frame.src='gameboy/frame.html?attempt='+attempt;
+setTimeout(()=>{if(state==='loading'){state='error';setOverlay('The game could not start.',true);btnStart.disabled=false;}},45000);
+}
+retry.onclick=()=>{frame.src='about:blank';state='idle';btnStart.disabled=false;start();};
+btnStart.onclick=start;
+btnPause.onclick=()=>send({type:'pause',value:!paused});
+btnSound.onclick=()=>send({type:'sound',value:!sound});
+btnExport.onclick=()=>send({type:'export'});
+btnSnap.onclick=()=>send({type:'snapshot'});
+btnImport.onclick=()=>file.click();
+btnFull.onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch{say('Fullscreen unavailable.');}};
+file.onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const t=await f.text();const b=JSON.parse(t);if(b.format!=='monsite-gold-cartridge'||b.version!==1)throw 0;localStorage.setItem('monsite.gold.cartridge.v1.restore',JSON.stringify(b));say('Backup staged. Restarting…');frame.src='about:blank';state='idle';btnStart.disabled=false;start();}catch{say('Invalid backup.');}};
+addEventListener('message',e=>{
+if(e.origin!==location.origin||e.source!==frame.contentWindow||e.data?.channel!=='gold-player')return;
+const d=e.data;
+if(d.type==='ready'){state='ready';overlay.hidden=true;enablePlayUI();btnStart.disabled=true;say('Playing.');}
+if(d.type==='paused'){paused=d.value===true;btnPause.textContent=paused?'Resume':'Pause';}
+if(d.type==='sound'){sound=d.value===true;btnSound.textContent=sound?'Mute':'Enable sound';}
+if(d.type==='saved')say('Cartridge save preserved.');
+if(d.type==='storage-error')say('Storage failed — export a backup.');
+if(d.type==='error'){state='error';setOverlay('The game could not start.',true);btnStart.disabled=false;}
+if(d.type==='backup'&&typeof d.backup==='string'){try{const b=JSON.parse(d.backup);download(d.backup,'pokemon-gold-cartridge.json','application/json');say(b.rtc?'Cartridge save exported.':'Backup exported without clock.');}catch{say('Backup failed.');}}
+if(d.type==='snapshot'&&typeof d.encoded==='string'){const bin=Uint8Array.from(atob(d.encoded),c=>c.charCodeAt(0));download(bin,'pokemon-gold.state','application/octet-stream');say('Save state exported.');}
+});
+const held=new Map();
+addEventListener('keydown',e=>{
+if(e.key==='Escape'&&state==='ready'){e.preventDefault();send({type:'pause',value:!paused});return;}
+const map={ArrowUp:'ArrowUp',ArrowDown:'ArrowDown',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight',x:'x',X:'x',z:'z',Z:'z',Enter:'Enter',Shift:'Shift'};
+const key=map[e.key]??(e.code==='ShiftLeft'||e.code==='ShiftRight'?'Shift':null);
+if(!key||state!=='ready'||paused||e.repeat)return;
+e.preventDefault();held.set(e.code,key);send({type:'key',key,down:true});
+});
+addEventListener('keyup',e=>{const key=held.get(e.code);if(!key)return;held.delete(e.code);if(![...held.values()].includes(key))send({type:'key',key,down:false});});
+addEventListener('blur',()=>{held.clear();if(state==='ready'){send({type:'release'});send({type:'save'});send({type:'pause',value:true});}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='ready'){send({type:'save'});send({type:'pause',value:true});}});
+document.querySelectorAll('[data-key]').forEach(b=>{
+const key=b.dataset.key;
+b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);if(state==='ready'&&!paused)send({type:'key',key,down:true});});
+const up=e=>send({type:'key',key,down:false});
+b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);
+});
+})();
+</script>
+</body>
+</html>

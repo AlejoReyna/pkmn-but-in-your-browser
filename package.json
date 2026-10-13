@@ -1,0 +1,22 @@
+{
+  "name": "pkmn-but-in-your-browser",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Game Boy Color (Gambatte/EmulatorJS) in the browser, isolated from monSite. ROM not included.",
+  "scripts": {
+    "test": "node --test scripts/test-konami.mjs scripts/test-gameboy.mjs",
+    "test:konami": "node --test scripts/test-konami.mjs",
+    "test:gameboy": "node --test scripts/test-gameboy.mjs",
+    "serve": "npx serve public"
+  },
+  "dependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}
